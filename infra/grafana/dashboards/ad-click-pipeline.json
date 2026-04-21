@@ -218,14 +218,16 @@
     },
     {
       "type": "timeseries",
-      "title": "Recalculation — published/s + errors",
+      "title": "Recalculation — published/s + errors (5m rate)",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 45},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Recalc fires in short bursts, so the 1m rate collapses to 0 between runs. A 5m rate keeps the burst visible.",
       "targets": [
-        {"refId": "A", "expr": "sum(rate(recalc_published_total[1m]))", "legendFormat": "recalc/s"},
-        {"refId": "B", "expr": "sum(rate(recalc_errors_total[1m]))",    "legendFormat": "errors/s"}
+        {"refId": "A", "expr": "sum(rate(recalc_published_total[5m]))", "legendFormat": "recalc/s (5m rate)"},
+        {"refId": "B", "expr": "sum(rate(recalc_errors_total[5m]))",    "legendFormat": "errors/s (5m rate)"},
+        {"refId": "C", "expr": "sum(recalc_published_total)",           "legendFormat": "total published"}
       ],
-      "fieldConfig": {"defaults": {"unit": "rps", "min": 0}}
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}}
     },
     {
       "type": "timeseries",

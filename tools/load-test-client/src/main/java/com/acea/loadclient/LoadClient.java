@@ -41,11 +41,17 @@ public final class LoadClient {
     private final AtomicLong sent = new AtomicLong();
     private final AtomicLong ok = new AtomicLong();
     private final AtomicLong err = new AtomicLong();
+    private final AtomicLong queriesSent = new AtomicLong();
+    private final AtomicLong queriesOk = new AtomicLong();
+    private final AtomicLong queriesErr = new AtomicLong();
+    private final java.util.concurrent.atomic.AtomicBoolean queriesRunning =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
 
     private final String targetUrl;
     private final String recalcUrl;
     private final String queryUrl;
     private final int rps;
+    private final int queryRps;
     private final int warmupSec;
     private final int durationSec;
     private final int cooldownSec;
@@ -57,6 +63,7 @@ public final class LoadClient {
         this.recalcUrl = c.recalcUrl;
         this.queryUrl = c.queryUrl;
         this.rps = c.rps;
+        this.queryRps = c.queryRps;
         this.warmupSec = c.warmupSec;
         this.durationSec = c.durationSec;
         this.cooldownSec = c.cooldownSec;
@@ -76,23 +83,85 @@ public final class LoadClient {
         waitForHealth(targetUrl);
 
         long runStart = Instant.now().getEpochSecond();
+
+        // Background query worker runs continuously through every phase so
+        // query-service panels (RPS/latency) get real traffic, not just the
+        // two one-shot checks at the end.
+        Thread queryWorker = startQueryWorker(queryRps);
+
         System.out.println("Phase 1: warmup " + warmupSec + "s @ " + (rps / 4) + " rps");
         runPhase(warmupSec, Math.max(1, rps / 4));
 
         System.out.println("Phase 2: sustained " + durationSec + "s @ " + rps + " rps");
+        // Fire a recalc every 30s through phase 2 so the Recalculation panel has
+        // continuous data rather than a single, long-tail-zero burst.
         ScheduledExecutorService recalcTrigger = Executors.newSingleThreadScheduledExecutor();
-        recalcTrigger.schedule(() -> triggerRecalc(runStart), durationSec / 2, TimeUnit.SECONDS);
+        recalcTrigger.scheduleAtFixedRate(
+                () -> triggerRecalc(runStart),
+                30, 30, TimeUnit.SECONDS);
         runPhase(durationSec, rps);
         recalcTrigger.shutdown();
 
         System.out.println("Phase 3: cooldown " + cooldownSec + "s @ " + (rps / 10) + " rps");
         runPhase(cooldownSec, Math.max(1, rps / 10));
 
+        queriesRunning.set(false);
+        queryWorker.join(5_000);
+
         Thread.sleep(5_000);
         verifyQueries();
-        System.out.println("DONE sent=" + sent.get() + " ok=" + ok.get() + " err=" + err.get());
+        System.out.println("DONE sent=" + sent.get() + " ok=" + ok.get() + " err=" + err.get()
+                + " queries_sent=" + queriesSent.get()
+                + " queries_ok=" + queriesOk.get()
+                + " queries_err=" + queriesErr.get());
         int rc = err.get() > sent.get() * 0.05 ? 1 : 0;
         System.exit(rc);
+    }
+
+    private Thread startQueryWorker(int qps) {
+        queriesRunning.set(true);
+        Thread t = new Thread(() -> {
+            long intervalNanos = 1_000_000_000L / Math.max(1, qps);
+            long nextFire = System.nanoTime();
+            while (queriesRunning.get()) {
+                queryOne();
+                nextFire += intervalNanos;
+                long sleep = nextFire - System.nanoTime();
+                if (sleep > 0) {
+                    try { TimeUnit.NANOSECONDS.sleep(sleep); }
+                    catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+                }
+            }
+        }, "query-worker");
+        t.setDaemon(true);
+        t.start();
+        return t;
+    }
+
+    private void queryOne() {
+        try {
+            String url;
+            // Mix of both endpoints so both panels get series.
+            if (RAND.nextBoolean()) {
+                String adId = "ad-" + String.format("%04d", RAND.nextInt(adCardinality));
+                int filter = RAND.nextInt(3);
+                url = queryUrl + "/ads/" + adId + "/aggregated_count?filter=" + filter;
+            } else {
+                int count = 5 + RAND.nextInt(10);
+                int window = 1 + RAND.nextInt(10);
+                int filter = RAND.nextInt(3);
+                url = queryUrl + "/ads/popular_ads?count=" + count + "&window=" + window + "&filter=" + filter;
+            }
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofSeconds(3))
+                    .GET().build();
+            queriesSent.incrementAndGet();
+            HttpResponse<Void> r = http.send(req, BodyHandlers.discarding());
+            if (r.statusCode() >= 400) queriesErr.incrementAndGet();
+            else queriesOk.incrementAndGet();
+        } catch (Exception ex) {
+            queriesErr.incrementAndGet();
+        }
     }
 
     private void waitForHealth(String target) throws InterruptedException {
@@ -164,12 +233,20 @@ public final class LoadClient {
 
     private void triggerRecalc(long runStartEpochSec) {
         long now = Instant.now().getEpochSecond();
-        String url = recalcUrl + "?from=" + runStartEpochSec + "&to=" + now;
+        // Walk a moving 60s window forward so each trigger replays fresh data
+        // rather than the same initial window, and skip if the previous run is
+        // still in flight (the service returns 409).
+        long from = Math.max(runStartEpochSec, now - 60);
+        String url = recalcUrl + "?from=" + from + "&to=" + now;
         try {
             HttpResponse<String> r = http.send(
                     HttpRequest.newBuilder(URI.create(url)).POST(BodyPublishers.noBody()).build(),
                     BodyHandlers.ofString());
-            System.out.println("recalc trigger status=" + r.statusCode() + " body=" + r.body());
+            if (r.statusCode() == 409) {
+                System.out.println("recalc skipped (still running)");
+            } else {
+                System.out.println("recalc trigger status=" + r.statusCode() + " body=" + r.body());
+            }
         } catch (Exception e) {
             System.err.println("recalc trigger failed: " + e.getMessage());
         }
@@ -219,6 +296,7 @@ public final class LoadClient {
             String recalcUrl,
             String queryUrl,
             int rps,
+            int queryRps,
             int warmupSec,
             int durationSec,
             int cooldownSec,
@@ -230,6 +308,7 @@ public final class LoadClient {
                     env("RECALC_URL", "http://localhost/recalc"),
                     env("QUERY_URL", "http://localhost"),
                     intEnv("RPS", 500),
+                    intEnv("QUERY_RPS", 20),
                     intEnv("WARMUP_SECONDS", 30),
                     intEnv("DURATION_SECONDS", 120),
                     intEnv("COOLDOWN_SECONDS", 30),
