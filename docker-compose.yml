@@ -57,6 +57,7 @@ x-cassandra-env: &cassandra-env
 
 x-app-common: &app-common
   restart: on-failure
+  pull_policy: never
   networks:
     - acea-net
 
@@ -310,6 +311,7 @@ services:
   recalc-1:
     <<: *app-common
     image: acea/recalculation-service:local
+    pull_policy: never
     depends_on: [kafka-init, cassandra-init]
     environment:
       SERVER_PORT: "8080"
@@ -354,6 +356,7 @@ services:
 
   load-client:
     image: acea/load-test-client:local
+    pull_policy: never
     profiles: ["test"]
     depends_on: [nginx]
     environment:

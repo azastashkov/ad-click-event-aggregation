@@ -38,13 +38,20 @@ docker-compose.yml                All infra + app containers on one bridge netwo
 
 ## Building images
 
+The application images (`acea/*:local`) are built locally via Jib into the
+Docker daemon; `docker-compose.yml` sets `pull_policy: never` for them, so
+compose uses the local copy and never hits a registry.
+
 ```bash
 # Optional: generate the Gradle wrapper (first time only)
 gradle wrapper --gradle-version 8.10
 
-# Build + push images directly into the local Docker daemon via Jib
-./gradlew clean jibDockerBuild
+# Build all acea/* images into the local Docker daemon via Jib
+gradle jibDockerBuild
 ```
+
+If you see `pull access denied for acea/click-event-watcher`, you skipped the
+`jibDockerBuild` step — run it and then retry `docker compose up`.
 
 ## Running the stack
 
