@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: aggregation-service
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+app:
+  streams:
+    application-id: ${APP_STREAMS_APPLICATION_ID:agg-service}
+    source-topic: ${APP_STREAMS_SOURCE_TOPIC:ad-click-events}
+    sink-topic: ${APP_STREAMS_SINK_TOPIC:aggregated-counts}
+    num-standbys: ${APP_STREAMS_STANDBYS:1}
+
+instance:
+  id: ${INSTANCE_ID:local}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      access: read_only
+    health:
+      access: read_only
+
+logging:
+  level:
+    root: INFO
+    org.apache.kafka: WARN
+    org.apache.kafka.streams: INFO

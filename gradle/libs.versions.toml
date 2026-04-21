@@ -1,0 +1,41 @@
+[versions]
+springBoot = "3.3.4"
+springDepMgmt = "1.1.6"
+lombok = "1.18.34"
+kafka = "3.7.1"
+micrometer = "1.13.4"
+cassandraDriver = "4.17.0"
+caffeine = "3.1.8"
+jib = "3.4.3"
+testcontainers = "1.20.2"
+jackson = "2.17.2"
+awaitility = "4.2.2"
+
+[libraries]
+lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
+
+kafka-clients = { group = "org.apache.kafka", name = "kafka-clients", version.ref = "kafka" }
+kafka-streams = { group = "org.apache.kafka", name = "kafka-streams", version.ref = "kafka" }
+kafka-streams-test = { group = "org.apache.kafka", name = "kafka-streams-test-utils", version.ref = "kafka" }
+
+micrometer-prom = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer" }
+micrometer-kafka = { group = "io.micrometer", name = "micrometer-core", version.ref = "micrometer" }
+
+cassandra-core = { group = "com.datastax.oss", name = "java-driver-core", version.ref = "cassandraDriver" }
+cassandra-query = { group = "com.datastax.oss", name = "java-driver-query-builder", version.ref = "cassandraDriver" }
+
+caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeine" }
+
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson" }
+jackson-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jackson" }
+
+testcontainers-junit = { group = "org.testcontainers", name = "junit-jupiter", version.ref = "testcontainers" }
+testcontainers-kafka = { group = "org.testcontainers", name = "kafka", version.ref = "testcontainers" }
+testcontainers-cassandra = { group = "org.testcontainers", name = "cassandra", version.ref = "testcontainers" }
+
+awaitility = { group = "org.awaitility", name = "awaitility", version.ref = "awaitility" }
+
+[plugins]
+springBoot = { id = "org.springframework.boot", version.ref = "springBoot" }
+springDepMgmt = { id = "io.spring.dependency-management", version.ref = "springDepMgmt" }
+jib = { id = "com.google.cloud.tools.jib", version.ref = "jib" }

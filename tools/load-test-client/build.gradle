@@ -1,0 +1,29 @@
+plugins {
+    id 'application'
+    alias(libs.plugins.jib)
+    id 'java'
+}
+
+application {
+    mainClass = 'com.acea.loadclient.LoadClient'
+}
+
+dependencies {
+    implementation project(':libs:common')
+
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+}
+
+jib {
+    from.image = 'eclipse-temurin:21-jre'
+    to.image = 'acea/load-test-client:local'
+    container {
+        ports = ['9095']
+        mainClass = 'com.acea.loadclient.LoadClient'
+        jvmFlags = ['-XX:+UseZGC', '-Xmx384m']
+    }
+}

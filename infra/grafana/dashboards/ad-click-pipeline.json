@@ -1,0 +1,165 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Watcher — click RPS (accepted)",
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum(rate(watcher_clicks_accepted_total[1m]))",
+          "legendFormat": "accepted/s"
+        }
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "area"}
+    },
+    {
+      "type": "timeseries",
+      "title": "Watcher HTTP — RPS per instance",
+      "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(http_server_requests_seconds_count{service=\"click-event-watcher\"}[1m]))",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Watcher HTTP — p95 latency",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{service=\"click-event-watcher\"}[5m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Kafka producer send rate",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (service) (rate(kafka_producer_record_send_total[1m]))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Kafka consumer lag (records-lag-max)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "max by (service, client_id) (kafka_consumer_fetch_manager_records_lag_max)",
+          "legendFormat": "{{service}} / {{client_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Raw writer — rows persisted/s",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum(rate(raw_writer_persisted_total[1m]))",
+          "legendFormat": "rows/s"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Aggregation writer — upserts/s",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (source) (rate(agg_writer_persisted_total[1m]))",
+          "legendFormat": "{{source}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Query service — RPS per endpoint",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (uri) (rate(http_server_requests_seconds_count{service=\"query-service\"}[1m]))",
+          "legendFormat": "{{uri}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Query service — p95 latency",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_bucket{service=\"query-service\"}[5m])))",
+          "legendFormat": "{{uri}} p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Recalculation — published/s",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum(rate(recalc_published_total[1m]))",
+          "legendFormat": "recalc/s"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Load client — sent/ok/err (rate)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "rate(load_client_sent_total[1m])", "legendFormat": "sent/s"},
+        {"expr": "rate(load_client_ok_total[1m])",   "legendFormat": "ok/s"},
+        {"expr": "rate(load_client_err_total[1m])",  "legendFormat": "err/s"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Kafka Streams — records consumed rate",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (service, topic) (rate(kafka_consumer_fetch_manager_records_consumed_total{service=~\".*agg.*\"}[1m]))",
+          "legendFormat": "{{service}} / {{topic}}"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["acea", "ad-click"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "timezone": "",
+  "title": "Ad Click Pipeline",
+  "uid": "ad-click-pipeline",
+  "version": 1,
+  "weekStart": ""
+}

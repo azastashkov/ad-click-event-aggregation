@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
+
+    api libs.kafka.clients
+    api libs.kafka.streams
+    api libs.jackson.databind
+    api libs.jackson.jsr310
+
+    testCompileOnly libs.lombok
+    testAnnotationProcessor libs.lombok
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+}

@@ -1,0 +1,49 @@
+plugins {
+    id 'java'
+}
+
+allprojects {
+    group = 'com.acea'
+    version = '1.0.0'
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs << '-parameters'
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+            exceptionFormat "full"
+        }
+    }
+
+    plugins.withId('com.google.cloud.tools.jib') {
+        jib {
+            from {
+                image = 'eclipse-temurin:21-jre'
+                platforms {
+                    platform {
+                        architecture = System.getProperty('os.arch').startsWith('aarch64') ? 'arm64' : 'amd64'
+                        os = 'linux'
+                    }
+                }
+            }
+        }
+    }
+}

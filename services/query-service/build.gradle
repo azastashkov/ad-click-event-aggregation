@@ -1,0 +1,35 @@
+plugins {
+    alias(libs.plugins.springBoot)
+    alias(libs.plugins.springDepMgmt)
+    alias(libs.plugins.jib)
+    id 'java'
+}
+
+dependencies {
+    implementation project(':libs:common')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation libs.cassandra.core
+    implementation libs.cassandra.query
+    implementation libs.caffeine
+    implementation libs.micrometer.prom
+
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
+
+    testCompileOnly libs.lombok
+    testAnnotationProcessor libs.lombok
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito:mockito-core'
+}
+
+jib {
+    from.image = 'eclipse-temurin:21-jre'
+    to.image = 'acea/query-service:local'
+    container {
+        ports = ['8080']
+        mainClass = 'com.acea.query.QueryServiceApp'
+        jvmFlags = ['-XX:+UseZGC', '-Xmx384m']
+    }
+}

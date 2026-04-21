@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'ad-click-event-aggregation'
+
+include 'libs:common'
+include 'services:click-event-watcher'
+include 'services:raw-database-writer'
+include 'services:aggregation-service'
+include 'services:aggregation-database-writer'
+include 'services:query-service'
+include 'services:recalculation-service'
+include 'tools:load-test-client'

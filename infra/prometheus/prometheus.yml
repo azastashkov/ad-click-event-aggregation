@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'click-event-watcher'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['watcher-1:8080', 'watcher-2:8080']
+        labels:
+          service: click-event-watcher
+
+  - job_name: 'raw-database-writer'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['raw-writer-1:8080', 'raw-writer-2:8080']
+        labels:
+          service: raw-database-writer
+
+  - job_name: 'aggregation-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['agg-1:8080', 'agg-2:8080']
+        labels:
+          service: aggregation-service
+
+  - job_name: 'aggregation-database-writer'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['agg-writer-1:8080', 'agg-writer-2:8080']
+        labels:
+          service: aggregation-database-writer
+
+  - job_name: 'query-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['query-1:8080', 'query-2:8080']
+        labels:
+          service: query-service
+
+  - job_name: 'recalculation-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['recalc-1:8080']
+        labels:
+          service: recalculation-service
+
+  - job_name: 'load-test-client'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['load-client:9095']
+        labels:
+          service: load-test-client
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
