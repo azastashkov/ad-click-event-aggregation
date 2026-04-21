@@ -65,7 +65,7 @@ public class AggregatesRepository {
 
     void upsertOne(AggregatedCount c) {
         Long previous = fetchPreviousCount(c);
-        BatchStatementBuilder batch = BatchStatement.builder(BatchType.LOGGED);
+        BatchStatementBuilder batch = BatchStatement.builder(BatchType.UNLOGGED);
         if (previous != null && previous != c.getCount()) {
             batch.addStatement(deleteByBucket.bind(c.getFilterId(), c.getMinute(), previous, c.getAdId()));
         }
